@@ -1,0 +1,6 @@
+{
+  "name": "Placar de Futebol para OBS",
+  "description": "Um sistema de placar de futebol em tempo real com painel de controle e overlay para OBS Studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

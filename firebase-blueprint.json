@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "MatchData": {
+      "title": "Match Data",
+      "description": "Real-time data for the football scoreboard",
+      "type": "object",
+      "properties": {
+        "homeTeam": { "type": "string" },
+        "awayTeam": { "type": "string" },
+        "homeScore": { "type": "integer" },
+        "awayScore": { "type": "integer" },
+        "timer": { "type": "integer" },
+        "isTimerRunning": { "type": "boolean" },
+        "period": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["homeTeam", "awayTeam", "homeScore", "awayScore", "timer", "isTimerRunning", "period"]
+    }
+  },
+  "firestore": {
+    "scoreboard/live": {
+      "schema": "MatchData",
+      "description": "The current live match state"
+    }
+  }
+}

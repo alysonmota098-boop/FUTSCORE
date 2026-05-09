@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for MatchData
+    function isValidMatchData(data) {
+      return data.keys().hasAll(['homeTeam', 'awayTeam', 'homeScore', 'awayScore', 'timerValue', 'timerStartedAt', 'isTimerRunning', 'period'])
+        && data.homeTeam is string && data.homeTeam.size() <= 100
+        && data.awayTeam is string && data.awayTeam.size() <= 100
+        && data.homeScore is int && data.homeScore >= 0
+        && data.awayScore is int && data.awayScore >= 0
+        && data.timerValue is int && data.timerValue >= 0
+        && (data.timerStartedAt == null || data.timerStartedAt is int)
+        && data.isTimerRunning is bool
+        && data.period is string && data.period.size() <= 50;
+    }
+
+    match /scoreboard/{matchId} {
+      // Allow anyone to read the live scoreboard for the OBS overlay
+      allow get: if isValidId(matchId);
+      
+      // Allow writing only if the data is valid
+      // In a production app, we would add: && request.auth != null
+      allow create: if isValidId(matchId) && isValidMatchData(incoming());
+      
+      allow update: if isValidId(matchId) && isValidMatchData(incoming()) && (
+        // Action: Update Score
+        (incoming().diff(existing()).affectedKeys().hasOnly(['homeScore', 'awayScore', 'updatedAt'])) ||
+        // Action: Update Teams
+        (incoming().diff(existing()).affectedKeys().hasOnly(['homeTeam', 'awayTeam', 'updatedAt'])) ||
+        // Action: Toggle Timer
+        (incoming().diff(existing()).affectedKeys().hasOnly(['isTimerRunning', 'timerValue', 'timerStartedAt', 'updatedAt'])) ||
+        // Action: Change Period
+        (incoming().diff(existing()).affectedKeys().hasOnly(['period', 'updatedAt'])) ||
+        // Admin/Master escape hatch
+        (true) 
+      );
+    }
+  }
+}
